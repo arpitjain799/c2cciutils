@@ -26,7 +26,8 @@ def main() -> None:
         if conf:
             audit = getattr(c2cciutils.audit, key)
             print(f"Run audit {key}")
-            success &= audit(conf, full_config, args)
+            run_success = audit(conf, full_config, args)
+            success &= run_success
     if not success:
         sys.exit(1)
 
