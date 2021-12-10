@@ -326,7 +326,9 @@ def npm(
             # Don't use check_output because audit will return an error on any vulnerabilities found
             # and we want to manage that ourself.
             subprocess.run(  # pylint: disable=subprocess-run-check
-                ["npm", "audit", "--json"], stdout=subprocess.PIPE, **subprocess_kwargs
+                ["npm", "audit", "--json"] + c2cciutils.get_arguments(config.get("audit_arguments", [])),
+                stdout=subprocess.PIPE,
+                **subprocess_kwargs,
             ).stdout
         )
         vulnerabilities = {}

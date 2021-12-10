@@ -19,6 +19,19 @@
               "description": "The list of CWE id to be ignored",
               "type": "array",
               "items": { "type": "string" }
+            },
+            "audit_arguments": {
+              "description": "The list of arguments to pass to the audit command",
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  { "type": "string" },
+                  { "type": "number" },
+                  { "const": true },
+                  { "const": null },
+                  { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "number" }] } }
+                ]
+              }
             }
           }
         },

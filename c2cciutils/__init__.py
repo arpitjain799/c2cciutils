@@ -273,7 +273,7 @@ def get_config() -> c2cciutils.configuration.Configuration:
             "pipfile": {"sections": ["default", "develop"]},
             "pipfile_lock": {"sections": ["default"]},
             "pipenv": False,
-            "npm": {"cwe_ignore": []},
+            "npm": {"cwe_ignore": [], "audit_arguments": {"--audit-level": "moderate", "--omit": "dev"}},
             "outdated_versions": True,
         },
     }
@@ -697,3 +697,28 @@ def get_based_on_master(
                 break
         return based_branch == master_branch
     return True
+
+
+def get_arguments(arguments: Dict[str, any]) -> List[str]:
+    """
+    Get the arguments from the command line.
+
+    Arguments:
+        arguments: The arguments dict,
+            value None -> no argument
+            value True -> just append the key
+            otherwise append key=value
+
+    Return the arguments list
+    """
+    result = []
+    for key, value in arguments.items():
+        if value is None:
+            continue
+        if value is True:
+            result.append(key)
+        if isinstance(value, list):
+            result.extend([f"{key}={item}" for item in value])
+        else:
+            result.append(f"{key}={value}")
+    return result
