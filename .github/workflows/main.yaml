@@ -30,6 +30,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - run: git --version
+      - run: git rev-parse --abbrev-ref HEAD --
+      - run: git rev-parse --abbrev-ref HEAD
+
       - uses: camptocamp/initialise-gopass-summon-action@v2
         with:
           ci-gpg-private-key: ${{secrets.CI_GPG_PRIVATE_KEY}}
