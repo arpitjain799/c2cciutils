@@ -6,3 +6,4 @@ pip==22.3.1
 pre-commit==2.21.0
 jsonschema-gentypes==1.4.1
 jsonschema2md2==0.6.0
+setuptools>=65.5.1 # not directly required, pinned by Snyk to avoid a vulnerability
