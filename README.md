@@ -1,30 +1,74 @@
 # C2C CI utils
 
-The goals of C2C CI utils are:
+## Publishing
 
-- Have some global checks that's didn't request any dependency related to the application:
-  this commands return 3 types of results:
-  - Print some useful information:
-    - The version of some packages
-    - The used configuration (with default and autodetect)
-    - The environment variables
-    - The GitHub event file
-  - Check that some configuration where correct:
-    - Git attributes
-    - That the timeout is present in the GitHub workflow files
-    - That the stabilization version (get from the Security.md) are used everywhere it's needed
-  - Snyk tests
-    - Test (never failed)
-    - Code test (never failed, disabled by default)
-    - Iac Test (never failed, disabled by default)
-    - Fix (For information only, disabled by default)
+The main goals of C2C CI utils is to offer the commands and the workflows to have the following project structure:
 
-Every check can be disabled with the following config (the configuration is `ci/config.yaml`):
+Have stabilization branch named by default `<major>.<minor>`.
+Have od the release named by default `<major>.<minor>-<patch>`.
 
-```yaml
-checks:
-  <check name>: false
-```
+With C2C CI utils you can publish a python package and a Docker image from the same repository.
+
+The default publishing are:
+
+- Push on the `<major>.<minor>` branch will publishing Docker images (the version in the last line af the
+  `SECURITY.md` of the `master` branch will be published also using the `latest` tag).
+- Create the tag `<major>.<minor>.<patch>` will publish the Docker images, and the Python package.
+- Push on a feature branch (whatever other name) will publish the Docker images.
+- Delete a feature branch will delete the Docker images.
+- Push on the `master` branch will publish the Docker images with the master tag (Publishing a python package is also possible).
+
+The Docker images are published on Docker Hub and GitHub Container Registry.
+
+.. Note::
+
+    Dry run publish: `GITHUB_REF=... c2cciutils-publish --dry-run ...`
+
+## Changelog
+
+Then we create a tag by default with the `changlog` workflow a release is created on GitHub, a changelog is
+generated add added to the release.
+
+## Security
+
+The security is managed by the `c2cciutils-audit` command with Snyk, it will audit the dependencies of the project on every
+stabilization branches, if possible a pull request is created automatically to update the dependencies.
+
+When we publish a Docker image the generated image is monitored by Snyk, this mean that Snyk will search
+for all the dependencies and send the list to the Snyk web site to be monitored.
+We also do a test of the image and log the result (This will never failed the build).
+
+## Checks
+
+C2C CI utils will no mere provide a tool to do a check of the project, this is replaced by `pre-commit`,
+a base configuration is provided in the example project.
+
+## Pull request checks
+
+A workflow is provided to run the checks on the pull requests, it will run the `c2cciutils-pr-checks` command.
+
+- Check that the commit message and the pull request title start with a capital letter.
+- Check that there aren't any spelling issue in the commit message and in the pull request title.
+- Add a message to the pull request to the JIRA issue if the pull request branch name start with
+  `[a-zA-Z]+-[0-9]+-` or end with `-[a-zA-Z]+-[0-9]+`.
+
+## Dependencies
+
+In the example project there is a basic Renovate configuration, it will update the dependencies of the project.
+There is also a workflow to add a review on the Renovate pull requests to make the auto merge working on
+repository that required a review.
+
+## Backports
+
+A workflow is provided to backport the pull requests on the stabilization branches, it will be triggered by
+adding a label named `backport <destination_branch>` on the pull request.
+
+## Old workflows
+
+GitHub will retain all the old workflows, so we need to delete them, the `delete-old-workflows-run`
+workflow will delete the workflows older than 500 days.
+
+## Workflows
 
 It make easier to place the following workflows:
 
@@ -32,27 +76,33 @@ It make easier to place the following workflows:
 - `auto-review.yaml`: Auto review the Renovate pull requests
 - `backport.yaml`: Trigger the backports (work with labels)
 - `clean.yaml`: Clean the Docker images related on a deleted feature branch
-- `codeql.yaml`: Run a GitHub CodeQL check
 - `main.yaml`: Main workflow especially with the c2cciutils-checks command
-- `rebuild.yaml`: Daily rebuild of the Docker images on the stabilization branches.
+- `changlog.yaml`: Generate the changelog and create the release on GitHub
+- `delete-old-workflows-run.yaml`: Delete the old workflows
+- `pr-checks.yaml`: Run the checks on the pull requests
 
-All the provided commands:
+All the provided commands used in the workflow:
 
-- `c2cciutils`: some generic tools.
-- `c2cciutils-checks`: Run the checks on the code (those checks don't need any project dependencies).
+- `c2cciutils-env`: Print many useful information about the running environment.
 - `c2cciutils-audit`: Do the audit, the main difference with checks is that it can change between runs on the same code.
 - `c2cciutils-publish`: Publish the project.
 - `c2cciutils-clean`: Delete Docker images on Docker Hub after corresponding branch have been deleted.
-- `c2cciutils-google-calendar`: Tool to test the Google credentials for calendar API and refresh them if needed. See `c2cciutils-google-calendar -h` for more information.
+
+## Utilities
+
+The following utilities are provided:
+
+- `c2cciutils`: some generic tools.
+- `c2cciutils-download-applications`: Download the applications with version managed by Renovate, see below.
+- `c2cciutils-docker-logs`: Display the logs of the application in Docker (compose).
 - `c2cciutils-k8s-install`: Install a k3d / k3s cluster, see below.
+- `c2cciutils-k8s-logs`: Display the logs of the application in the k8s cluster, see below.
 - `c2cciutils-k8s-db`: Create a database in the k8s cluster, see below.
 - `c2cciutils-k8s-wait`: Wait that the application started correctly in the cluster, see below.
-- `c2cciutils-k8s-logs`: Display the logs of the application in the k8s cluster, see below.
-- `c2cciutils-pin-pipenv`: Display all the dependencies that's in the `Pipenv.lock` but not in the `Pipenv` to be able to pin them.
-- `c2cciutils-docker-logs`: Display the logs of the application in Docker (compose).
-- `c2cciutils-trigger-image-update`: Trigger the ArgoCD repository about image update on the CI (automatically done in the publishing).
-- `c2cciutils-download-applications`: Download the applications with version managed by Renovate, see below.
 - `c2cciutils-docker-versions-gen`: Generate the Docker package versions file (`ci/dpkg-versions.yaml`), see below.
+- `c2cciutils-pin-pipenv`: Display all the dependencies that's in the `Pipenv.lock` but not in the `Pipenv` to be able to pin them.
+- `c2cciutils-trigger-image-update`: Trigger the ArgoCD repository about image update on the CI (automatically done in the publishing).
+- `c2cciutils-google-calendar`: Tool to test the Google credentials for calendar API and refresh them if needed. See `c2cciutils-google-calendar -h` for more information.
 
 ## New project
 
@@ -68,12 +118,6 @@ In the CI we need to have the following secrets::
   the secrets exists in the Camptocamp organization but not shared on all project, then you should add
   your project to the shared list.
 
-## Use locally, in the projects that use c2cciutils
-
-Install it: `python3 -m pip install --user --requirement ci/requirements.txt`
-Run the checkers: `c2cciutils-checks [--fix] [--stop] [--check CHECK]`
-Dry run publish: `GITHUB_REF=... c2cciutils-publish --dry-run ...`
-
 ## Configuration
 
 You can get the current configuration with `c2cciutils --get-config`, the default configuration depends on your project.
@@ -84,7 +128,6 @@ You can override the configuration with the file `ci/config.yaml`.
 At the base of the configuration you have:
 
 - `version`: Contains some regular expressions to find the versions branches and tags, and to convert them into application versions.
-- `checks`: The checker's configuration, see `c2cciutils/checks.py` for more information.
 - `audit`: The audit configuration, see `c2cciutils/audit.py` for more information.
 - `publish`: The publishing configuration, see `c2cciutils/publish.py` for more information.
 
@@ -279,7 +322,6 @@ The `applications-versions.yaml` file is a map of applications and their version
 Add in your Renovate configuration:
 
 ```json5
-
   regexManagers: [
     {
       fileMatch: ['^applications-versions.yaml$'],
